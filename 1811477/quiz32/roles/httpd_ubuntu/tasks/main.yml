@@ -1,0 +1,47 @@
+---
+# tasks file for roles/httpd_ubuntu
+
+- name: installing apache2 in ubuntu
+  apt:
+    name: apache2
+    state: latest
+    update_cache: yes
+
+- name: firewall service in ubuntu
+  service:
+    name: ufw
+    state: stopped
+    enabled: no
+
+- name: creating apache2 user in ubuntu
+  user:
+    name: crebello
+    password: $5$kidUsiNi1DSb9Tos5$Uzg3kCCA0ZuzNJ7rv1tvz90emi6T7BqSi7jEOfgP/0D
+    comment: "add new user"
+
+- name: adding denyuser in ubuntu
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "DenyUsers crebello"
+  register: sshd_config
+
+- name: creating directory in ubuntu
+  file:
+    path: /var/www/crebello
+    state: directory
+    owner: crebello
+    group: crebello
+    mode: '755'
+
+- name: creating index.html in ubuntu
+  copy:
+    content: "crebello"
+    dest: /var/www/crebello/index.html
+  register: apache_index
+
+- name: starting apache service in ubuntu
+  service:
+    name: apache2
+    state: restarted
+    enabled: yes
+  when: apache_index.changed

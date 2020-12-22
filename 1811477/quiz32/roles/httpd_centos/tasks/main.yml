@@ -1,0 +1,53 @@
+---
+# tasks file for roles/httpd_centos
+
+- name: installing httpd in centos
+  yum:
+    name: httpd
+    state: latest
+    update_cache: yes
+
+- name: firewall service in centos
+  service:
+    name: firewall
+    state: stopped
+    enabled: no
+
+- name: creating apache2 user in centos
+  user:
+    name: crebello
+    password: $5$phnkbuO2fNtD7mq$RtBtYCo1TdYMcn6vq5qsh9d2S9IIowfYo.4q8f14BP8
+    comment: "add mew user"
+
+- name: adding denyuser in centos
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "DenyUsers crebello"
+  register: ssh_comfig
+
+- name: restarting sshd service in centos
+  service:
+    name: sshd
+    state: restarted
+  when: ssh_config.changed
+
+- name: creating directory in centos
+  file:
+    path: /var/www/crebello
+    state: directory
+    owner: crebello
+    group: crebello
+    mode: '755'
+
+- name: creating index.html in centos
+  copy:
+    content: "crebello"
+    dest: /var/www/crebello/index.html
+  register: apache_imdex
+
+- name: starting apache2 service in centos
+  service:
+    name: httpd
+    state: restarted
+    enabled: yes
+  when: apache_index.changed
