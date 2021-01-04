@@ -1,0 +1,6 @@
+---
+- name: Install and Configure Nagios Core on Ubuntu
+  hosts: Ubuntu
+  roles:
+    - ubuntu-installnagios
+    - ubuntu-confignagios
