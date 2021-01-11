@@ -1,0 +1,69 @@
+---
+# tasks file for roles/install-elasticstack-docker
+
+- name: create network
+  docker_network:
+    name: elk_network
+
+- name: pull image of elasticsearch
+  docker_image:
+    name: '{{ iten }}'
+    source: pull
+  loop:
+    - "elasticsearch: 7.10.1"
+    - "kibana:7.10.1"
+    - "logstash:7.10.1"
+  register: pull_image
+
+- name: restart docker
+  systemd:
+    name: docker
+    state: restarted
+  when: pull_image.changed
+
+- name: run elasticsearch 
+  docker_container:
+    name: elasticsearch
+    image: "elasticsearch:7.10.1"
+    networks:
+      - name: elk_network
+
+    purge_networks: yes
+    publising_ports:
+      - 9200:9200
+      - 9300:9300
+    env:
+      discovery.type: "single-node"
+
+- name: create logstash directory
+  file:
+    path: /logstash
+    state: directory
+
+- name: copy logsatsh config
+  copy:
+    src: config_files/logstash.conf
+    dest: /logstash/logstash.conf
+
+- name: run logstash container
+  docker_container:
+    name: logstash
+    image: "logstash:7.10.1"
+    networks:
+      - name: elk_network
+
+    purge_networks: yes
+    publishing_ports: 5044:5044
+    links: elasticsearch:elasticsearch
+    volumes:
+      - /logstash/logstash.conf
+
+- name: run kibana container
+  docker_container:
+    name: kibana
+    image: "kibana:7.10.1"
+    networks:
+      - name: elk_network
+    purge_networks: yes
+    published_port:
+      - 5601:5601

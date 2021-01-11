@@ -1,0 +1,21 @@
+---
+
+- name: stop firewall service on ubuntu
+  hosts: ubuntu
+  tasks:
+    - name: stop ufw on ubuntu
+      service:
+        name: ufw
+        state: stopped
+        enabled: no
+        #      when: ansinble_distribution == 'debian' or ansible_distribution == 'ubuntu'
+
+- name: install docker on ubuntu
+  hosts: ubuntu
+  roles:
+    - ubuntu-install-docker
+
+- name: pull elastic stack images and run
+  hosts: ubuntu
+  roles:
+    - install-elasticstack-docker
