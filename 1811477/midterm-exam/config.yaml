@@ -120,7 +120,7 @@
         name: centos-Kibana
       when: ansible_distribution == 'CantOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- host: logstash
+- hosts: logstash
   tasks:
     - name: install and configure logstash on ubuntu
       include_role:
