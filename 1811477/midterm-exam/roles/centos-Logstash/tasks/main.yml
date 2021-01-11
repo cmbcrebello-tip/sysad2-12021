@@ -1,0 +1,35 @@
+---
+# tasks file for roles/centos-Logstash
+
+- name: install logstash using dnf
+  dnf:
+    name: logstash
+    state: present
+
+- name: start logstash
+  sysytemd:
+    state: started
+    name: logstash
+    enabled: yes
+
+- name: install filebeat using yum
+  yum:
+    name: filebeat
+    state: latest
+    update_cache: yes
+
+- name: add the system module
+  shell: 'filebeat modules enable system'
+
+- name: run filebeat setup
+  shell: 'filebeat setup'
+
+- name: start filebeat service
+  service:
+    name: filebeat
+    state: started
+
+- name: check kibana if up
+  uri:
+    uri: http://localhost:5601
+

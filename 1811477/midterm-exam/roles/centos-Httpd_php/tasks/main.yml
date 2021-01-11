@@ -1,0 +1,56 @@
+---
+# tasks file for roles/centos-Httpd_php
+
+- name: install httpd using dnf
+  dnf:
+    name:
+      - httpd
+      - httpd-tools
+    state: present
+
+- name: start and enabled httpd
+  systemd:
+    name: httpd
+    state: started
+    enabled: yes
+
+- name: install php using dnf
+  dnf:
+    name:
+      - php
+      - php-opcache
+      - php-gd
+      - php-curl
+      - php-mysqlnd
+
+- name: start and enable php
+  systemd:
+    name: php-fpm
+    state: started
+    enabled: yes
+
+- name: allow apache to execute php
+  seboolean:
+    name: httpd_execmem
+    state: yes
+    persistent: yes
+  register: allow_php
+
+- name: start and enabled httpd
+  systemd:
+    name: httpd
+    state: started
+    enabled: yes
+  when: allow_php.changed
+
+- name: create info.php
+  copy:
+    dest: /var/www/html/info.php
+    content: |
+      <?php
+      phpinfo ();
+      ?>
+
+- name: test php if up
+  uri:
+    url: http://10.0.2.15/info.php

@@ -1,0 +1,46 @@
+---
+# tasks file for roles/ubuntu-Kibana
+
+- name: install kibana
+  apt:
+    name: kibana
+    state: present
+    update_cache: yes
+
+- name: start and enable kibana
+  service:
+    name: kibana
+    state: started
+    enabled: yes
+
+- name: create administrative kibana user
+  copy:
+    content: "cynaaadmin:`openss1 passwd -apr1`"
+    dest: /etc/nginx/htpasswd.users
+
+- name: create nginx server block file
+  copy:
+    src: config_files/cynaa_domain
+    dest: /etc/nginx/sites-available/cynaa_domain
+
+- name: create symbolic link to sites-enabled
+  file:
+    src: /etc/nginx/sites-available/cynaa_domain
+    dest: /etc//nginz/sites-enabled/cynaa_domain
+    state: link
+  register symbolic_link
+
+- name: check the configuration for syntax errors
+  shell: "nginx -t"
+  when: symbolic_link.changed
+
+- name: reload nginx service
+  systemd:
+    name: nginx
+    state: reloaded
+  when: symbolic_link.changed
+
+- name: allow nginx full in ufw
+  ufw:
+    rule: allow
+    name: 'Nginx Full'

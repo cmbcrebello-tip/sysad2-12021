@@ -1,0 +1,70 @@
+---
+# tasks file for roles/centos-Elasticsearch
+
+- name: download elasticsearch with rpm
+  rpm_key:
+    state: present
+    key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+- name: copy elasticsearch.repo config file
+  copy:
+    src: config_files/elasticsearch.repo
+    dest: /etc/yum.repos.d/elasticsearch.repo
+
+- name: dnf update all packages
+  dnf:
+    name: "*"
+    state: latest
+
+- name: install elasticsearch usinf dnf
+  dnf:
+    name: elasticsearch
+    state: present
+
+- name: configure network.host in elasticsearch.yml
+  replace:
+    path: /etc/elasticsearch/elasticsearch.yml
+    regexp: '.network.host:(.*)$'
+    replace: 'network.host: localhost'
+#      backrefs: yes
+
+- name: configure http.port in elasticsearch
+  replace:
+    path: /etc/elasticsearch/elasticsearch.yml
+    regexp: 'http.port:(.*)$'
+    replace: 'http.port: 9200'
+#      backrefs: yes
+
+# - name: reboot the system
+#   reboot:
+
+# Uncomment line 43 - 58 if you encounter error about time out execeed and commnet line 67
+
+#- name: create a directory for time erro
+#   file:
+#     path: /etc/systemd/system/elasticsearch.service.d
+#     state: directory
+
+#- name: change start time of elasticsearch service to solve error
+#  copy:
+#    content: |
+#      [Service]
+#      TimeoutStartSec=180
+#    dest: /etc/systemd/system/elasticsearch.service.d/startup-timeout
+#  register: time_error
+
+#- name: reload systemd manager configuration
+#  systemd: deamon-reload=yes
+#  when: time_error.changed
+
+- name: start elasticsearch
+  systemd:
+    state: started
+    name: elasticsearch
+    enabled: yes
+  ignore_errors: yes
+
+#- name: check elasticsearch if up
+#  uri:
+#    url: localhost:9200
+#    method: GET

@@ -1,0 +1,37 @@
+---
+# tasks file for roles/ubuntu-Apache2_php
+
+- name: install apache2 using apt
+  apt:
+    name: apache2
+    state: present
+    update_cache: yes
+
+- name: install php 7.4
+  apt:
+    name:
+      - php7.4
+      - php7.4-mysql
+      - php-common
+      - php7.4-cli
+      - php7.4-commom
+      - php7.4-opcache
+      - libapache2-mod-php7.4
+
+- name: start and enable apache2
+  systemd:
+    name: apache2
+    state: started
+    enabled: yes
+
+- name: create info.php
+  copy:
+    dest: /var/www/html/info.php
+    content: |
+      <?php
+      phpinfo ();
+      ?>
+
+- name: test php if up
+  uri:
+    url: http://10.0.2.15/info.php

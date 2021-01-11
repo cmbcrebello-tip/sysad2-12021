@@ -1,0 +1,138 @@
+---
+# tasks file for roles/centos-Prometheus
+
+- name: create user and group
+  user:
+    name: cynaa-prometheus
+    shell: /bin/false
+
+- name: create directory 
+  file:
+    path: /etc/prometheus
+    state: directory
+
+- name: create directory /var/lib/prometheus
+  file:
+    path: /var/lib/prometheus
+    state: directory
+    owner: cynaa-prometheus
+    group: cynaa-prometheus
+
+- name: downlaod prometheus tar file
+  get_url:
+    url: https://github.com/prometheus/prometheus/relaeses/downloas/v2.14.0/prometheus-2.14.0.linux-amd64.tar.gz
+    dest: /tmp/prometheus-2.14.0.linux-amd64.tar.gz
+
+- name: unarchive prometheus tar file
+  unarchive:
+    src: /tmp/prometheus-2.14.0.linux-amd64.tar.gz
+    dest: /tmp/
+    remote_src: yes
+
+- name: copy pronetheus from /tmp/prometheus-2.14.0.linux-amd64
+  copy:
+    src: /tmp/prometheus-2.14.0.linux-amd64/prometheus
+    dest: /usr/local/bin/prometheus
+    remote_src: yes
+
+- name: copy promtool
+  copy:
+    src: /tmp/prometheus-2.14.0.linux-amd64/promtool
+    dest: /usr/local/bin/promtool
+    remote_src: yes
+
+- name: copy prometheus.yml config file
+  copy:
+    src: config_files/prometheus.yml
+    dest: /etc/prometheus/prometheus.yml
+
+- name: allow firewall port 9090/tcp
+  firewalld:
+    port: 9090/tcp
+    permanent: yes
+    state: enabled
+  register: allow_9090port
+
+- name: reload firewall service
+  service:
+    name: firewalld
+    state: restarted
+  when: allow_9090port.changed
+
+- name: copy prometheus service file
+  copy:
+    src: config_files/prometheus.service
+    dest: /etc/systemd/system/prometheus.service
+
+- name: reload the systemctl
+  systemd:
+    daemon_reload: yes
+
+- name: start and enable prometheus service
+  systemd:
+    name: prometheus
+    state: stated
+    enabled: yes
+#  when: allow_9090port.changed
+
+- name: create user and group for node exporter
+  user:
+    name: node_exporter
+    shell: /bin/false
+
+- name: download node exporter tar file
+  get_url:
+    url: https://github.com/prometheus/node-_exporter/relaeses/download/v0.18.1/node_exporter-0.18.1.linux-amd64.tar.gz
+    dest: /tmp/node_exporter-0.18.1.linux-amd64.tar.gz
+
+- name: unarchive node exporter
+  unrchive:
+    src: /tmp/noce_exporter-0.18.1.linux-amd64.tar.gz
+    dest: /tmp/
+    remote_src: yes
+
+- name: copy node exporter to /usr/local/bim
+  copy:
+    src: /tmp/node_exporter-0.18.1.linux-amd64/node_exporter
+    dest: /usr/local/bin/node_exporter
+    remote_src: yes
+    owner: node_exporter
+    group: node_exporter
+
+- name: copy node exporter service file
+  copy:
+    src: config_files/node_exporter.service
+    dest: /etc/systemd/system/node_exporter.service
+  register: copy_node_exporter_service
+
+- name: reload the systemctl
+  systemd:
+    deamon_reload: yes
+
+- name: start and enable node exporter
+  systemd:
+    name: node_exporter
+    state: started
+    enabled: yes
+  when: copy_node_exporter_service.changed
+
+- name: add firewall port 9100/tcp
+  firewalld:
+    port: 9100/tcp
+    permanent: yes
+    state: enabled
+  register: add_port9100
+
+- name: reload firewall service
+  systemd:
+    name: firewalld
+    state: reloaded
+  when: add_port9100.changed
+
+- name: restart prometheus
+  systemd:
+    name: prometheus
+    state: restarted
+#  when: add_port9100.changed
+
+

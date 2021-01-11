@@ -1,0 +1,17 @@
+---
+# tasks file for roles/centos-Mariadb
+
+- name: install mariadb using dnf
+  dnf:
+    name:
+      - mariadb-server
+      - mariadb
+    state: present
+
+- name: start and enable Mariadb
+  systemd:
+    name: mariadb
+    state: started
+    enabled: yes
+
+

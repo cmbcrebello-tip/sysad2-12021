@@ -1,0 +1,158 @@
+---
+# tasks file for roles/ubuntu-Prometheus
+
+- name: install nginx for prerequisite of prometheus
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: start nginx
+  systemd:
+    name: nginx
+    state: started
+
+- name: create user for prometheus
+  user:
+    name: ubuntu-prome
+    shell: /bin/false
+    create_home: no
+
+- name: create user for node exporter
+  user:
+    name: node_exporter
+    shell: /bin/false
+    create_home: no
+
+- name: create directory file
+  file:
+    path: /etc/prometheus
+    state: directory
+    owner: ubuntu-prome
+    group: ubuntu-prome
+
+- name: create dir file /var/lib/prometheus
+  file:
+    path: /var/lib/prometheus
+    state: directory
+    owner: ubuntu-prome
+    group: ubuntu-prome
+
+- name: download prometheus-2.0.0.linux-amd64.tar.gz
+  get_url:
+    url: https://github.com/prometheus/release/download/v2.0.0/prometheus-2.0.0.linux-amd64.tar.gz
+    dest: /tmp/prometheus-2.0.0.linux.amd64.taz.gz
+
+- name: unarchive prometheus-2.0.0.linux-amd64.tar.gz
+  unarchive:
+    src: /tmp/prometheus-2.0.0.linux.amd64.tar.gz
+    dest: /tmp/
+    remote_src: yes
+
+- name: copy prometheus from /tmp/prometheus-2.0.0.linux-amd64
+  copy:
+    src: /tmp/prometheus-2.0.0.linux-amd64/prometheus
+    dest: /usr/local/bin/prometheus
+    remote_scr: yes
+    owner: ubuntu-prome
+    group: ubuntu-prome
+
+- name: copy promtool
+  copy:
+    src: /tmp/prometheus-2.0.0.linux-amd64/promtool
+    dest: /usr/local/bin/promtool
+    remote_src: yes
+    owner: ubuntu-prome
+    group: ubuntu-prome
+
+#- name: check if /etc/prometheus/consoles/ file exists
+#  stat:
+#    path: /etc/prometheus/consoles
+#  register: stat_on
+
+- name: copy consoles for /tmp/prometheus-2.0.0.linux-amd64
+  copy:
+    src: /tmp/prometheus-2.0.0.linux-amd64/consoles
+    dest: /etc/prometheus/consoles
+    remote_src: yes
+    owrner: ubuntu-prome
+    group: ubuntu-prome
+#  when: stat_con.stat.exists == False
+
+#- name: check if /etc/prometheus/consoles file exists
+#  stat:
+#    path: /etc/prometheus/consoles
+#  register: stat_con_lib
+
+- name: copy console libraries
+  copy:
+    src: /tmp/prometheus-2.0.0.linux-amd64/console_libraries
+    dest: /etc/prometheus/console_libraries
+    remote_src: yes
+    owner: ubuntu-prome
+    group: ubuntu-prome
+#  when: stat_con_lib.stat.exists == False
+
+- name: copy ubuntu-prometheus.yml
+  copy:
+    src: config_files/ubuntu-prometheus.yml
+    dest: /etc/prometheus/prometheus.yml
+
+- name: copy ubuntu-prometheus.service
+  copy:
+    src: config_files/ubuntu-prometheus.service
+    dest: /etc/systemd/system/prometheus.service
+
+- name: reload systemctk
+  systemd:
+    daemon_reload: yes
+#  register: reload_systemctl
+
+- name: start and enable prometheus
+  systemd:
+    name: prometheus
+    state: started
+    enabled: yes
+#  when: reload_systemctl.changed
+
+- name: download node exporter
+  get_url:
+    url: https://github.com/prometheus/node_exporter/release/download/v0.15.1/node_exporter-0.15.1.linux-amd64.tar.gz
+    dest: /tmp/node_exporter-0.15.1.linux-amd64.tar.gz
+
+- name: unarchive node expoerter
+  unarchive:
+    src: /tmp/node_expoter-0.15.1.linux-amd64.tar.gz
+    dest: /tmp/
+    remote_src: yes
+
+- name: copy node exporter file
+  copy:
+    src: /tmp/node_exporter-0.15.1.linux-amd64/node_exporter
+    dest: /usr/local/bin/node_exporter
+    remote_src: yes
+    owner: node_exporter
+    group: node_exporter
+
+- name: copy node exporter service
+  copy:
+    src: comfig_files/ubuntu-node_exporter.service
+    dest: /etc/systemd/system/node_exporter.service
+
+- name: reload systemctl
+  systemd:
+    daemon_reload: yes
+#  register: reload_systemctl2
+
+- name: start and enable node exporter
+  systemd:
+    name: node_exporter
+    state: started
+    enabled: yes
+#  when: reload_systemctl2.changed
+
+- name: restart prometheus
+  systemd:
+    name: prometheus
+    state: restarted
+#  when: reload_systemctl2.changed

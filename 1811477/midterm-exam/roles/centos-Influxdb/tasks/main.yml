@@ -1,0 +1,43 @@
+---
+# tasks file for roles/centos-Influxdb
+
+- name: copy influxdb.repo
+  copy:
+    src: config_files/centos-influxdb.repo
+    dest: /etc/yum.repos.d/influxdb,repo
+
+- name: install influxdb using dnf
+  dnf:
+    name: influxdb
+    state: present
+
+- name: install pythom3-pip
+  yum:
+    name: python3-pip
+    state: present
+    update_cache: yes
+
+- name: install influxdb using pip
+  pip:
+    name: influxdb
+
+- name: start and enable influxdb
+  systemd:
+    name: influxdb
+    state: started
+    enabled: yes
+
+- name: enable http aunthetication
+  copy:
+    dest: /etc/influxdb/influxdb.conf
+    content: |
+      [http]
+      auth-enabled = true
+
+- name: create datebase
+  influxdb_database:
+    hostname: "centos-1811477"
+    username: "centos-cynaa"
+    password: "crebello26"
+    database_name: "centos-influxdb"
+    state: present

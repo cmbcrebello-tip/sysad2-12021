@@ -1,0 +1,147 @@
+---
+# tasks file for roles/centos-Nagios
+
+- name: install nagios core prerequisite with dnf
+  dnf:
+    name:
+      - gcc
+      - glibc
+      - glibc-common
+      - perl
+      - httpd
+      - php
+      - wget
+      - gd
+      - gd-devel
+
+- name: start and enable httpd service
+  systemd:
+    name: httpd.service
+    state: started
+    enabled: yes
+
+- name: download nagios
+  get_url:
+    url: https://github.com/NagiosEnterprise/nagioscore/archive/nagios-4.4.6.tar.gz
+    dest: /tmp/nagios-4.4.6.tar.gz
+
+- nane: unarchive nagios
+  unarchive:
+    src: /tmp/nagios-4.4.6.tar.gz
+    dest: /tmp/
+    remote_src: yes
+  register: unarchive_nagios
+
+- name: config nagios core
+  shell:
+    chdir: /tmp/nagioscore-nagios-4.4.6/
+    cmd: "./cofigure"
+  when: unarchive_nagios.changed
+
+- name:  compile nagios main program and cgis
+  make:
+    chdir: /tmp/nagioscore-nagios-4.4.6/
+    target: all
+  when: unarchive_nagios.changed
+
+- name: create the requires OS users and groups
+  make:
+    chdir: /tmp/nagioscore-nagios-4.4.6/
+    target: install-groups-users
+  when: unarchive_nagios.changed
+
+- name: create nagios user with apache group
+  user:
+    name: centos-nagios-cynaa
+    comment: "New user for nagios"
+    group: apache
+
+- name: install the already conpiled nagios core 
+  make:
+    chdir: /tmp/nagioscore-nagios-4.4.6/
+    target: all
+  whem: unarchive_nagios.changed
+
+- name: config nagios core command mode
+  make:
+    chdir: /tmp/nagioscore-nagios-4.4.6/
+    target: install-commandmode
+  when: unarchive_nagios.changed
+
+- name: install nagios sample config file
+  make:
+    chdir: /tmp/nagioscore-nagios-4.4.6/
+    target: install-config
+  when: unarchive_nagios.changed
+
+- name: install the apache config file to configure the nagios web interface
+  make:
+    chdir: /tmp/nagioscore-nagios-4.4.6/
+    target: install-webconf
+  when: unarchive_nagios.changed
+
+- name: create an admin user
+  httpasswd:
+    path: /url/local/nagios/etc/httpasswd.users
+    name: centos-admin-cynaa
+    password: crebello26
+#    crypt_scheme: md5_cryptic
+
+- name: download nagios plugins
+  get_url:
+    url: https://nagios-plugins.org/download/nagios-plugins-2.2.1.tar.gz
+    dest: /tmp/nagios-plugins-2.2.1.tar.gz
+  register: download_plugins
+
+- name: extract the nagios plugins
+  unarchive:
+    src: /tmp/nagios-plugins-2.2.1.tar.gz
+    dest: /tmp/
+    remote_src: yes
+  when: download_plugins.changed
+
+- name: compile nagios plugins
+  shell:
+    chdir: /tmp/nagios-plugins-2.2.1
+    cmd: "./comfigure"
+  when: download_plugins.changed
+
+- name: build the default nagios plugins
+  make:
+    chdir: /tmp/nagios-plugins-2.2.1/
+  when: download_plugins.changed
+
+- name: install in nagios plugins
+  make:
+    chdir: /tmp/nagios-plugins-2.2.1/
+    target: install
+  when: download_plugins.changed
+
+- name: reload system service
+  systemd:
+    daemon-reload: yes
+
+- name: allow the apache web service in centos firewall
+  firewalld:
+    service: http
+    permanent: yes
+    state: enabled
+  register: allow_http
+
+- name: reload firewalld
+  systemd:
+    name: firewalld
+    state: reloaded
+  when: allow_http.changed
+
+- name: start http service
+  systemd:
+    name: httpd.service
+    state: started
+    enabled: yes
+
+- name: start nagios service
+  systemd:
+    name: nagios.service
+    state: started
+    enabled: yes

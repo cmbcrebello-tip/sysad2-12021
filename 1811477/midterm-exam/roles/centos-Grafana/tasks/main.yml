@@ -1,0 +1,33 @@
+---
+# tasks file for roles/centos-Grafana
+
+- name: add grafana yum repository
+  copy:
+    src: config_files/grafana.repo
+    dest: /etc/yum.repos.d/grafana.repo
+
+- name: install makecache and grafana with yum
+  yum:
+    name:
+      - grafana
+    state: present
+    update_cache: yes
+
+- name: start and enable grafana service
+  systemd:
+    name: grafana-server
+    state: started
+    enabled: yes
+
+- name: open firewall port for grafana
+  firewalld:
+    port: 3000/tcp
+    permanent: true
+    state: enabled
+  register: add_port
+
+- name: reload firewalld
+  systemd:
+    name: firewalld
+    state: reloaded
+  when: add_port.changed

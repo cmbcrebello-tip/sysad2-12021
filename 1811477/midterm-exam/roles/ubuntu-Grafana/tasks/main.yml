@@ -1,0 +1,31 @@
+---
+# tasks file for roles/ubuntu-Grafana
+
+- name: imstall apt-transport-https software-properties-common wget with apt
+  apt:
+    name:
+      - apt-transport-https
+      - software-properties-common
+      - wget
+
+- name: add the gpg key
+  apt_key:
+    url: https://packages.grafana.com/gpg.key
+    state: present
+
+- name: add grafana repository
+  copy:
+    dest: /etc/apt/sources.list.d/grafana.list
+    content: 'deb https://packages.grafana.com/oss/deb stable main'
+
+- name: install grafana with apt
+  apt:
+    name: grafana
+    state: present
+    update_cache: yes
+
+- name: start and enable grafana
+  systemd:
+    name: grafana-server
+    state: started
+    enabled: yes
