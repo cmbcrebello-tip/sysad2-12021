@@ -1,0 +1,20 @@
+---
+
+- name: install java on ubuntu
+  hosts: ubuntu
+  tasks:
+    - name: install java
+      apt:
+        name: default-jre
+        state: latest
+        update_cache: yes
+
+- name: run tasks on ubuntu
+  hosts: ubuntu
+  tasks:
+    - name: install ansible, boto, and openstack via pip
+      pip:
+        name:
+          - ansible
+          - boto
+          - python-openstackclient
