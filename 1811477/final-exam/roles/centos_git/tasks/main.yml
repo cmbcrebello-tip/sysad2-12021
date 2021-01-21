@@ -1,0 +1,16 @@
+---
+# tasks file for roles/centos_git
+
+- name: creating dicetory
+  file:
+    path: /home/cmbcrebello-tip/repo
+    state: directory
+    mode: "777"
+
+- name: clone prelim repo
+  git:
+    repo: 'https://github.com/cmcbrebello/sysad2-12021.git'
+    dest: /home/cmbcrebello-tip/repo
+    version: prelim-exam
+    clone: yes
+    update: yes
