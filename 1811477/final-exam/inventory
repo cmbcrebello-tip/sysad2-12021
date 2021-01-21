@@ -1,5 +1,5 @@
 [ubuntu]
-10.0.2.15 ansible_ssh_pass=crebello26 ansible_ssh_user=cynaa ansible_sudo_pass=crebello26
+10.0.2.15 
 
 [centos]
 10.0.2.15
